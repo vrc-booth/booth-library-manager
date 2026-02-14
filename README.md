@@ -1,6 +1,8 @@
 # booth-library-manager
 
 > Notice: This project was built with AI assistance.
+>
+> Dedicated purpose: This extension is intended specifically for managing personal BOOTH purchase/gift libraries on `accounts.booth.pm`.
 
 Chrome extension (MV3) for managing your BOOTH purchase library inside `accounts.booth.pm`.
 
@@ -100,6 +102,8 @@ types/
 ## 한국어 버전
 
 > 안내: 이 프로젝트는 AI의 도움을 받아 제작되었습니다.
+>
+> 전용 목적: 이 확장프로그램은 `accounts.booth.pm`에서 개인의 BOOTH 구매/선물 라이브러리를 관리하는 용도로만 설계되었습니다.
 
 `accounts.booth.pm` 내 구매 라이브러리를 관리하기 위한 Chrome 확장 프로그램(MV3)입니다.
 
