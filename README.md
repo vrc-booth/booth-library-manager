@@ -1,5 +1,7 @@
 # booth-library-manager
 
+> Notice: This project was built with AI assistance.
+
 Chrome extension (MV3) for managing your BOOTH purchase library inside `accounts.booth.pm`.
 
 This project uses WXT + React and injects an overlay panel (Shadow DOM) into the BOOTH library page.
@@ -92,3 +94,79 @@ types/
 - BOOTH has no official public API for this workflow, so parsing depends on DOM structure.
 - If BOOTH markup changes, selectors in `utils/parser.ts` may need updates.
 - The panel is rendered in Shadow DOM with z-index above page overlays.
+
+---
+
+## 한국어 버전
+
+> 안내: 이 프로젝트는 AI의 도움을 받아 제작되었습니다.
+
+`accounts.booth.pm` 내 구매 라이브러리를 관리하기 위한 Chrome 확장 프로그램(MV3)입니다.
+
+WXT + React 기반으로 동작하며, BOOTH 라이브러리 페이지에 Shadow DOM 오버레이 패널을 주입합니다.
+
+### 주요 기능
+
+- `https://accounts.booth.pm/*` 오버레이 패널 UI
+- 소스 탭: `Library` / `Gifts`
+- 필터 탭: `All` / `Favorites` / `Hidden` (선택한 소스 기준)
+- 제목/작가명 검색
+- 패널 너비 리사이즈
+- 패널 너비에 따라 그리드 열 수 자동 증가
+- 다운로드 버튼 + 호버 드롭다운 링크
+- Library/Gifts 동시 동기화
+- 5페이지 단위 배치 로딩
+- 동기화 중 점진적 렌더링
+- 확장 스토리지 로컬 캐시
+  - 캐시가 비어 있으면 첫 실행 시 자동 동기화
+- 1분마다 1페이지 자동 리프레시
+- 패널 열 때 1페이지 즉시 리프레시
+
+### 기술 스택
+
+- WXT `0.20.x`
+- React `19`
+- TanStack Query `5`
+- Tailwind CSS `4`
+- TypeScript `5.9`
+- pnpm `10`
+
+### 명령어
+
+```bash
+pnpm install
+
+# 개발 (Chrome)
+pnpm dev
+
+# 개발 (Firefox)
+pnpm dev:firefox
+
+# 프로덕션 빌드
+pnpm build
+
+# Firefox 빌드
+pnpm build:firefox
+
+# 배포용 zip
+pnpm zip
+pnpm zip:firefox
+
+# 타입 체크
+npx tsc --noEmit
+```
+
+### 스토리지
+
+확장은 `browser.storage.local`을 사용합니다.
+
+- `booth-library-cache`
+  - 라이브러리 아이템 캐시 (`BoothItem[]`)
+- `booth-library-preferences`
+  - 사용자 설정 (`favorites`, `hidden`, `tags`)
+
+### 참고
+
+- BOOTH는 이 워크플로우용 공식 공개 API가 없어 HTML 파싱에 의존합니다.
+- BOOTH 마크업이 바뀌면 `utils/parser.ts` 셀렉터 업데이트가 필요할 수 있습니다.
+- 패널은 Shadow DOM으로 렌더링되며 페이지 오버레이보다 높은 z-index로 표시됩니다.
