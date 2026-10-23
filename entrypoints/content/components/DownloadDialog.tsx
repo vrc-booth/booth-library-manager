@@ -41,7 +41,8 @@ function Checkbox({ checked, indeterminate = false }: CheckboxProps) {
 export default function DownloadDialog({ title, items, onDownload, onClose }: DownloadDialogProps) {
   const itemsWithFiles = useMemo(() => items.filter((item) => getFileUrls(item).length > 0), [items]);
   const allUrls = useMemo(() => Array.from(new Set(itemsWithFiles.flatMap(getFileUrls))), [itemsWithFiles]);
-  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(() => new Set(allUrls));
+  // 받을 파일은 사용자가 직접 고르도록 아무것도 체크하지 않은 상태로 연다.
+  const [selectedUrls, setSelectedUrls] = useState<Set<string>>(() => new Set());
 
   const isSingleItem = items.length === 1;
   const skippedCount = items.length - itemsWithFiles.length;
@@ -172,7 +173,6 @@ export default function DownloadDialog({ title, items, onDownload, onClose }: Do
           <button
             onClick={handleDownload}
             disabled={selectedUrls.size === 0}
-            autoFocus
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-[#fc4d50] rounded-md hover:bg-[#e03e41] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             <DownloadIcon />
