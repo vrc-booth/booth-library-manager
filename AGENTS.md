@@ -66,6 +66,8 @@ booth-library-manager/
 │       └── components/     # UI components
 ├── assets/
 │   └── tailwind.css       # Tailwind entry point (@import "tailwindcss")
+├── public/
+│   └── icons/             # Extension icons, copied as-is to the build output
 ├── rules/
 │   └── parser-rules.json  # Remote parser selectors, served from GitHub `main`
 ├── docs/planning/          # Dev planning documents (Korean)
