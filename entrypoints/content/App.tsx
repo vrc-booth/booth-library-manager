@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useLibraryFetcher } from "../../hooks/useLibraryFetcher.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { useLibrarySearch } from "../../hooks/useLibrarySearch.ts";
+import { useLoginStatus } from "../../hooks/useLoginStatus.ts";
 import FloatingButton from "./components/FloatingButton.tsx";
 import LibraryPanel from "./components/LibraryPanel.tsx";
 
@@ -91,6 +92,13 @@ function AppContent() {
 }
 
 export default function App() {
+  const loginStatus = useLoginStatus();
+
+  // 로그인하지 않았으면 버튼도 띄우지 않고, 동기화·자동 새로고침도 시작하지 않는다.
+  if (loginStatus !== "logged-in") {
+    return null;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />
