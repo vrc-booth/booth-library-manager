@@ -59,7 +59,7 @@ No test framework is configured yet. When adding tests:
 ```
 booth-library-manager/
 ├── entrypoints/           # WXT entry points (content scripts, background, etc.)
-│   ├── background.ts      # Fetches remote parser rules (avoids BOOTH page CSP)
+│   ├── background.ts      # Remote parser rules (avoids BOOTH page CSP) + download queue
 │   └── content/           # Content script — injected into Booth.pm pages
 │       ├── index.tsx       # defineContentScript + Shadow DOM setup
 │       ├── App.tsx         # Root component (QueryClientProvider, state)
@@ -146,7 +146,7 @@ src/                       # Will hold non-entrypoint source code
 
 ```tsx
 export default defineContentScript({
-  matches: ["*://accounts.booth.pm/*"],
+  matches: ["https://accounts.booth.pm/*"],
   cssInjectionMode: "ui",
   async main(ctx: ContentScriptContext) {
     const ui = await createShadowRootUi(ctx, { ... });
@@ -166,8 +166,10 @@ All UI renders inside Shadow DOM (`createShadowRootUi`). This means:
 ### Manifest Permissions
 
 Declared in `wxt.config.ts` under `manifest.permissions`:
-- `tabs` — for tab management
-- Host permissions configured via `matches` in content script definition
+- `storage` — preferences, folders, and caches
+- `downloads` — start BOOTH file downloads from the background without opening tabs (only `https://*.booth.pm` URLs are accepted)
+- No `host_permissions`: the content script only runs on `matches` (`https://accounts.booth.pm/*`), library requests are same-origin from the content script, and downloads go through the `downloads` API
+- The manifest `key` is added only for the dev server (`command === "serve"`) and is left out of store builds
 
 ## Key Design Decisions
 

@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useLibraryFetcher } from "../../hooks/useLibraryFetcher.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { useLibrarySearch } from "../../hooks/useLibrarySearch.ts";
+import { useLoginStatus } from "../../hooks/useLoginStatus.ts";
+import { usePanelWidth } from "../../hooks/usePanelWidth.ts";
 import FloatingButton from "./components/FloatingButton.tsx";
 import LibraryPanel from "./components/LibraryPanel.tsx";
 
@@ -17,7 +19,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const [isOpen, setIsOpen] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(384);
+  const [panelWidth, setPanelWidth] = usePanelWidth();
 
   const { items, syncProgress, isSyncing, sync, error } = useLibraryFetcher({
     isPanelOpen: isOpen,
@@ -27,6 +29,7 @@ function AppContent() {
     toggleFavorite,
     toggleHidden,
     isFavorite,
+    folderActions,
   } = useUserPreferences();
   const {
     searchQuery,
@@ -35,24 +38,28 @@ function AppContent() {
     setActiveSourceTab,
     activeTab,
     setActiveTab,
+    activeFolderId,
+    setActiveFolderId,
     filteredItems,
     libraryCount,
     giftsCount,
     favoritesCount,
     hiddenCount,
+    customCount,
     totalCount,
     filteredCount,
   } = useLibrarySearch({
     items,
     favorites: preferences.favorites,
     hidden: preferences.hidden,
+    folders: preferences.folders,
   });
 
   const handleToggle = () => setIsOpen((prev) => !prev);
   const handleClose = () => setIsOpen(false);
   const handlePanelWidthChange = useCallback((width: number) => {
     setPanelWidth(width);
-  }, []);
+  }, [setPanelWidth]);
   const handleSync = useCallback(() => {
     sync({ includeGifts: true });
   }, [sync]);
@@ -64,6 +71,7 @@ function AppContent() {
         isOpen={isOpen}
         onClose={handleClose}
         items={filteredItems}
+        allItems={items}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         activeSourceTab={activeSourceTab}
@@ -76,12 +84,17 @@ function AppContent() {
         filteredCount={filteredCount}
         favoritesCount={favoritesCount}
         hiddenCount={hiddenCount}
+        customCount={customCount}
         syncProgress={syncProgress}
         isSyncing={isSyncing}
         onSync={handleSync}
         isFavorite={isFavorite}
         onToggleFavorite={toggleFavorite}
         onToggleHidden={toggleHidden}
+        folders={preferences.folders}
+        folderActions={folderActions}
+        activeFolderId={activeFolderId}
+        onOpenFolder={setActiveFolderId}
         error={error}
         panelWidth={panelWidth}
         onPanelWidthChange={handlePanelWidthChange}
@@ -91,6 +104,13 @@ function AppContent() {
 }
 
 export default function App() {
+  const loginStatus = useLoginStatus();
+
+  // 로그인하지 않았으면 버튼도 띄우지 않고, 동기화·자동 새로고침도 시작하지 않는다.
+  if (loginStatus !== "logged-in") {
+    return null;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AppContent />

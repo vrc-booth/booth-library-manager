@@ -1,56 +1,69 @@
-import type { MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import type { BoothItem } from "../../../types/booth.ts";
+import { useLibraryActions } from "../libraryActions.ts";
+import DownloadIcon from "./DownloadIcon.tsx";
+import FolderIcon from "./FolderIcon.tsx";
 
 interface ItemCardProps {
   item: BoothItem;
-  isFavorite: boolean;
-  onToggleFavorite: (itemId: string) => void;
-  onToggleHidden: (itemId: string) => void;
 }
 
-export default function ItemCard({
-  item,
-  isFavorite,
-  onToggleFavorite,
-  onToggleHidden,
-}: ItemCardProps) {
-  const downloadLinks = item.downloadUrls.filter((link) => link.url.trim().length > 0);
+export default function ItemCard({ item }: ItemCardProps) {
+  const actions = useLibraryActions();
+
+  const fileCount = item.downloadUrls.filter((link) => link.url.trim().length > 0).length;
+  const isFavorite = actions.isFavorite(item.id);
+  const isSelected = actions.isSelected(item.id);
+  const isInFolder = actions.isInAnyFolder(item.id);
 
   const handleCardClick = () => {
+    if (actions.isSelectMode) {
+      actions.toggleSelected(item.id);
+      return;
+    }
     window.open(item.boothUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleFavoriteClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onToggleFavorite(item.id);
+    actions.toggleFavorite(item.id);
   };
 
   const handleHideClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onToggleHidden(item.id);
+    actions.toggleHidden(item.id);
   };
 
-  const handleQuickDownload = (e: MouseEvent<HTMLButtonElement>) => {
+  const handleFolderClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    actions.openFolderPicker(item.id);
+  };
 
-    const firstLink = downloadLinks[0];
-    if (!firstLink) {
-      return;
-    }
+  const handleDownloadClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    actions.openDownloadDialog(item.id);
+  };
 
-    window.open(firstLink.url, "_blank", "noopener,noreferrer");
+  const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
+    event.dataTransfer.effectAllowed = "copyMove";
+    event.dataTransfer.setData("text/plain", item.title);
+    actions.startItemDrag(item.id);
   };
 
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={actions.endItemDrag}
       onClick={handleCardClick}
-      className="
+      className={`
         group relative rounded-lg
-        bg-white border border-gray-100
+        bg-white border
         shadow-sm hover:shadow-md hover:z-30
         transition-all duration-200 hover:scale-[1.02]
         cursor-pointer
-      "
+        ${isSelected ? "border-[#fc4d50] ring-2 ring-[#fc4d50]/40" : "border-gray-100"}
+      `}
     >
       {/* Thumbnail */}
       <div className="aspect-square bg-gray-100 overflow-hidden rounded-t-lg">
@@ -60,6 +73,7 @@ export default function ItemCard({
             alt={item.title}
             className="w-full h-full object-cover"
             loading="lazy"
+            draggable={false}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -82,6 +96,13 @@ export default function ItemCard({
 
       {/* Action buttons - visible on hover */}
       <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={handleFolderClick}
+          className="p-1.5 rounded-full bg-white/90 shadow-sm hover:bg-white transition-colors"
+          title="Add to folders"
+        >
+          <FolderIcon filled={isInFolder} className={isInFolder ? "text-[#fc4d50]" : "text-gray-600"} />
+        </button>
         <button
           onClick={handleFavoriteClick}
           className="p-1.5 rounded-full bg-white/90 shadow-sm hover:bg-white transition-colors"
@@ -127,21 +148,36 @@ export default function ItemCard({
         </button>
       </div>
 
-      {/* Favorite indicator - always visible when favorited */}
-      {isFavorite && (
-        <div className="absolute top-1 left-1">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="#fc4d50"
-            stroke="#fc4d50"
-            strokeWidth="2"
-          >
-            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-          </svg>
+      {/* Top-left indicator: selection checkbox in select mode, otherwise favorite */}
+      {actions.isSelectMode ? (
+        <div
+          className={`
+            absolute top-1.5 left-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shadow-sm
+            ${isSelected ? "bg-[#fc4d50] border-[#fc4d50]" : "bg-white/90 border-gray-300"}
+          `}
+        >
+          {isSelected && (
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
         </div>
+      ) : (
+        isFavorite && (
+          <div className="absolute top-1 left-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="#fc4d50"
+              stroke="#fc4d50"
+              strokeWidth="2"
+            >
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+            </svg>
+          </div>
+        )
       )}
 
       {/* Info */}
@@ -153,68 +189,24 @@ export default function ItemCard({
           {item.title}
         </h3>
 
-        <div
-          className="relative mt-auto pt-2 group/download"
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="mt-auto pt-2">
           <button
-            onClick={handleQuickDownload}
-            disabled={downloadLinks.length === 0}
+            onClick={handleDownloadClick}
+            disabled={fileCount === 0}
+            title={fileCount === 0 ? "No downloadable files" : "Choose files to download"}
             className={`
               w-full flex items-center justify-center gap-1.5
               px-2 py-1.5 text-[10px] font-medium rounded-md
               transition-colors
-              ${downloadLinks.length === 0
+              ${fileCount === 0
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                 : "bg-[#fc4d50]/10 text-[#fc4d50] hover:bg-[#fc4d50]/20"
               }
             `}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" x2="12" y1="15" y2="3" />
-            </svg>
-            {downloadLinks.length === 0 ? "No download" : "Download"}
+            <DownloadIcon />
+            {fileCount === 0 ? "No download" : fileCount > 1 ? `Download (${fileCount})` : "Download"}
           </button>
-
-          {downloadLinks.length > 0 && (
-            <div
-              className="
-                absolute left-0 right-0 top-full z-20
-                opacity-0 pointer-events-none
-                group-hover/download:opacity-100 group-hover/download:pointer-events-auto
-                group-focus-within/download:opacity-100 group-focus-within/download:pointer-events-auto
-                transition-opacity
-              "
-            >
-              <div className="mt-1 max-h-40 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg p-1">
-                {downloadLinks.map((link, index) => (
-                  <a
-                    key={`${link.url}-${index}`}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="block px-2 py-1 text-[10px] text-gray-700 rounded hover:bg-gray-100 truncate"
-                    title={link.name}
-                  >
-                    {index + 1}. {link.name}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
