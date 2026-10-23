@@ -6,7 +6,7 @@ import App from "./App.tsx";
 const OVERLAY_Z_INDEX = 1100;
 
 export default defineContentScript({
-  matches: ["*://accounts.booth.pm/*"],
+  matches: ["https://accounts.booth.pm/*"],
   cssInjectionMode: "ui",
 
   async main(ctx: ContentScriptContext) {
