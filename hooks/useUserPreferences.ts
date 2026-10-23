@@ -1,18 +1,39 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addTag,
   getPreferences,
   removeTag,
   toggleFavorite,
   toggleHidden,
+  updateFolders,
 } from "../utils/storage.ts";
-import { type UserPreferences } from "../types/booth.ts";
+import {
+  addItemsToFolder,
+  createFolder,
+  deleteFolder,
+  moveFolder,
+  moveItemsToFolder,
+  removeItemsFromFolder,
+  renameFolder,
+} from "../utils/folders.ts";
+import { type LibraryFolder, type UserPreferences } from "../types/booth.ts";
 
 const DEFAULT_PREFERENCES: UserPreferences = {
   favorites: [],
   hidden: [],
   tags: {},
+  folders: [],
 };
+
+export interface FolderActions {
+  createFolder: (name: string, parentId: string | null) => Promise<string>;
+  renameFolder: (folderId: string, name: string) => Promise<void>;
+  deleteFolder: (folderId: string) => Promise<void>;
+  moveFolder: (folderId: string, newParentId: string | null) => Promise<void>;
+  addItems: (folderId: string, itemIds: string[]) => Promise<void>;
+  removeItems: (folderId: string, itemIds: string[]) => Promise<void>;
+  moveItems: (fromFolderId: string, toFolderId: string, itemIds: string[]) => Promise<void>;
+}
 
 export function useUserPreferences() {
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
@@ -72,6 +93,33 @@ export function useUserPreferences() {
     setError(null);
   }, []);
 
+  const applyFolderUpdate = useCallback(async (transform: (folders: LibraryFolder[]) => LibraryFolder[]) => {
+    try {
+      const updated = await updateFolders(transform);
+      setPreferences(updated);
+      setError(null);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError : new Error("Failed to update folders"));
+      throw caughtError;
+    }
+  }, []);
+
+  const folderActions = useMemo<FolderActions>(() => ({
+    createFolder: async (name, parentId) => {
+      const folderId = crypto.randomUUID();
+      await applyFolderUpdate((folders) => createFolder(folders, name, parentId, folderId));
+      return folderId;
+    },
+    renameFolder: (folderId, name) => applyFolderUpdate((folders) => renameFolder(folders, folderId, name)),
+    deleteFolder: (folderId) => applyFolderUpdate((folders) => deleteFolder(folders, folderId)),
+    moveFolder: (folderId, newParentId) => applyFolderUpdate((folders) => moveFolder(folders, folderId, newParentId)),
+    addItems: (folderId, itemIds) => applyFolderUpdate((folders) => addItemsToFolder(folders, folderId, itemIds)),
+    removeItems: (folderId, itemIds) => applyFolderUpdate((folders) => removeItemsFromFolder(folders, folderId, itemIds)),
+    moveItems: (fromFolderId, toFolderId, itemIds) => {
+      return applyFolderUpdate((folders) => moveItemsToFolder(folders, fromFolderId, toFolderId, itemIds));
+    },
+  }), [applyFolderUpdate]);
+
   const isFavorite = useCallback(
     (itemId: string) => preferences.favorites.includes(itemId),
     [preferences.favorites],
@@ -95,6 +143,7 @@ export function useUserPreferences() {
     toggleHidden: handleToggleHidden,
     addTag: handleAddTag,
     removeTag: handleRemoveTag,
+    folderActions,
     isFavorite,
     isHidden,
     getItemTags,

@@ -1,19 +1,15 @@
 import { browser } from "wxt/browser";
-import { type UserPreferences } from "../types/booth.ts";
+import { type LibraryFolder, type UserPreferences } from "../types/booth.ts";
+import { normalizeFolders } from "./folders.ts";
 
 const STORAGE_KEY = "booth-library-preferences";
-
-const DEFAULT_PREFERENCES: UserPreferences = {
-  favorites: [],
-  hidden: [],
-  tags: {},
-};
 
 function cloneDefaultPreferences(): UserPreferences {
   return {
     favorites: [],
     hidden: [],
     tags: {},
+    folders: [],
   };
 }
 
@@ -64,6 +60,7 @@ function normalizePreferences(value: unknown): UserPreferences {
     favorites: normalizeStringArray(raw.favorites),
     hidden: normalizeStringArray(raw.hidden),
     tags: normalizeTags(raw.tags),
+    folders: normalizeFolders(raw.folders),
   };
 }
 
@@ -94,7 +91,7 @@ function sanitizeTag(tag: string): string {
 export async function getPreferences(): Promise<UserPreferences> {
   const stored = await storageGet<unknown>(STORAGE_KEY);
   if (stored === undefined) {
-    return { ...DEFAULT_PREFERENCES, tags: {} };
+    return cloneDefaultPreferences();
   }
   return normalizePreferences(stored);
 }
@@ -104,38 +101,54 @@ export async function savePreferences(prefs: UserPreferences): Promise<void> {
   await storageSet(STORAGE_KEY, normalized);
 }
 
-export async function toggleFavorite(itemId: string): Promise<UserPreferences> {
-  const normalizedItemId = sanitizeItemId(itemId);
-  const current = await getPreferences();
+let pendingUpdate: Promise<unknown> = Promise.resolve();
 
-  if (normalizedItemId.length === 0) {
-    return current;
-  }
-
-  const updated: UserPreferences = {
-    ...current,
-    favorites: toggleItem(current.favorites, normalizedItemId),
+/**
+ * 읽기-수정-쓰기를 한 줄로 세워 실행한다. 빠르게 연달아 바꿔도 앞선 변경이 덮어써지지 않는다.
+ */
+function updatePreferences(update: (current: UserPreferences) => UserPreferences): Promise<UserPreferences> {
+  const run = async () => {
+    const current = await getPreferences();
+    const updated = update(current);
+    if (updated === current) {
+      return current;
+    }
+    await savePreferences(updated);
+    return normalizePreferences(updated);
   };
 
-  await savePreferences(updated);
-  return updated;
+  const result = pendingUpdate.then(run, run);
+  pendingUpdate = result.catch(() => undefined);
+  return result;
 }
 
-export async function toggleHidden(itemId: string): Promise<UserPreferences> {
+export function updateFolders(transform: (folders: LibraryFolder[]) => LibraryFolder[]): Promise<UserPreferences> {
+  return updatePreferences((current) => {
+    const folders = transform(current.folders);
+    return folders === current.folders ? current : { ...current, folders };
+  });
+}
+
+export function toggleFavorite(itemId: string): Promise<UserPreferences> {
   const normalizedItemId = sanitizeItemId(itemId);
-  const current = await getPreferences();
 
-  if (normalizedItemId.length === 0) {
-    return current;
-  }
+  return updatePreferences((current) => {
+    if (normalizedItemId.length === 0) {
+      return current;
+    }
+    return { ...current, favorites: toggleItem(current.favorites, normalizedItemId) };
+  });
+}
 
-  const updated: UserPreferences = {
-    ...current,
-    hidden: toggleItem(current.hidden, normalizedItemId),
-  };
+export function toggleHidden(itemId: string): Promise<UserPreferences> {
+  const normalizedItemId = sanitizeItemId(itemId);
 
-  await savePreferences(updated);
-  return updated;
+  return updatePreferences((current) => {
+    if (normalizedItemId.length === 0) {
+      return current;
+    }
+    return { ...current, hidden: toggleItem(current.hidden, normalizedItemId) };
+  });
 }
 
 export async function addTag(itemId: string, tag: string): Promise<UserPreferences> {

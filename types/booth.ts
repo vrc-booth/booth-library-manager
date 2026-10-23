@@ -16,10 +16,19 @@ export interface DownloadFile {
   url: string;
 }
 
+export interface LibraryFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  itemIds: string[];
+  createdAt: number;
+}
+
 export interface UserPreferences {
   favorites: string[];
   hidden: string[];
   tags: Record<string, string[]>;
+  folders: LibraryFolder[];
 }
 
 export interface LibraryPage {
@@ -39,6 +48,6 @@ export interface SyncProgress {
   source?: LibrarySource;
 }
 
-export type FilterTab = "all" | "favorites" | "hidden";
+export type FilterTab = "all" | "favorites" | "hidden" | "custom";
 
 export type SourceTab = "library" | "gifts";

@@ -59,7 +59,7 @@ No test framework is configured yet. When adding tests:
 ```
 booth-library-manager/
 ├── entrypoints/           # WXT entry points (content scripts, background, etc.)
-│   ├── background.ts      # Fetches remote parser rules (avoids BOOTH page CSP)
+│   ├── background.ts      # Remote parser rules (avoids BOOTH page CSP) + download queue
 │   └── content/           # Content script — injected into Booth.pm pages
 │       ├── index.tsx       # defineContentScript + Shadow DOM setup
 │       ├── App.tsx         # Root component (QueryClientProvider, state)
@@ -166,7 +166,9 @@ All UI renders inside Shadow DOM (`createShadowRootUi`). This means:
 ### Manifest Permissions
 
 Declared in `wxt.config.ts` under `manifest.permissions`:
+- `storage` — preferences, folders, and caches
 - `tabs` — for tab management
+- `downloads` — start BOOTH file downloads from the background without opening tabs (only `https://*.booth.pm` URLs are accepted)
 - Host permissions configured via `matches` in content script definition
 
 ## Key Design Decisions

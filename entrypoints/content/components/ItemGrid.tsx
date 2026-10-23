@@ -3,16 +3,14 @@ import ItemCard from "./ItemCard.tsx";
 
 interface ItemGridProps {
   items: BoothItem[];
-  isFavorite: (itemId: string) => boolean;
-  onToggleFavorite: (itemId: string) => void;
-  onToggleHidden: (itemId: string) => void;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }
 
 export default function ItemGrid({
   items,
-  isFavorite,
-  onToggleFavorite,
-  onToggleHidden,
+  emptyTitle = "No items found",
+  emptyDescription = "Try syncing your library or adjusting filters",
 }: ItemGridProps) {
   if (items.length === 0) {
     return (
@@ -33,8 +31,8 @@ export default function ItemGrid({
           <path d="M12 13V7" />
           <path d="M9 10l3-3 3 3" />
         </svg>
-        <p className="mt-3 text-sm">No items found</p>
-        <p className="text-xs mt-1">Try syncing your library or adjusting filters</p>
+        <p className="mt-3 text-sm">{emptyTitle}</p>
+        <p className="text-xs mt-1 text-center">{emptyDescription}</p>
       </div>
     );
   }
@@ -45,13 +43,7 @@ export default function ItemGrid({
       style={{ gridTemplateColumns: "repeat(auto-fill, minmax(128px, 1fr))" }}
     >
       {items.map((item) => (
-        <ItemCard
-          key={item.id}
-          item={item}
-          isFavorite={isFavorite(item.id)}
-          onToggleFavorite={onToggleFavorite}
-          onToggleHidden={onToggleHidden}
-        />
+        <ItemCard key={item.id} item={item} />
       ))}
     </div>
   );

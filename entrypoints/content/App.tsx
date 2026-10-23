@@ -28,6 +28,7 @@ function AppContent() {
     toggleFavorite,
     toggleHidden,
     isFavorite,
+    folderActions,
   } = useUserPreferences();
   const {
     searchQuery,
@@ -36,17 +37,21 @@ function AppContent() {
     setActiveSourceTab,
     activeTab,
     setActiveTab,
+    activeFolderId,
+    setActiveFolderId,
     filteredItems,
     libraryCount,
     giftsCount,
     favoritesCount,
     hiddenCount,
+    customCount,
     totalCount,
     filteredCount,
   } = useLibrarySearch({
     items,
     favorites: preferences.favorites,
     hidden: preferences.hidden,
+    folders: preferences.folders,
   });
 
   const handleToggle = () => setIsOpen((prev) => !prev);
@@ -65,6 +70,7 @@ function AppContent() {
         isOpen={isOpen}
         onClose={handleClose}
         items={filteredItems}
+        allItems={items}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         activeSourceTab={activeSourceTab}
@@ -77,12 +83,17 @@ function AppContent() {
         filteredCount={filteredCount}
         favoritesCount={favoritesCount}
         hiddenCount={hiddenCount}
+        customCount={customCount}
         syncProgress={syncProgress}
         isSyncing={isSyncing}
         onSync={handleSync}
         isFavorite={isFavorite}
         onToggleFavorite={toggleFavorite}
         onToggleHidden={toggleHidden}
+        folders={preferences.folders}
+        folderActions={folderActions}
+        activeFolderId={activeFolderId}
+        onOpenFolder={setActiveFolderId}
         error={error}
         panelWidth={panelWidth}
         onPanelWidthChange={handlePanelWidthChange}

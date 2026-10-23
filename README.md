@@ -12,11 +12,17 @@ This project uses WXT + React and injects an overlay panel (Shadow DOM) into the
 
 - Overlay panel UI on `https://accounts.booth.pm/*`
 - Source tabs: `Library` / `Gifts`
-- Filter tabs: `All` / `Favorites` / `Hidden` (per selected source)
+- Filter tabs: `All` / `Favorites` / `Hidden` (per selected source) / `Custom`
+- `Custom` tab: organize items into nested folders (across Library and Gifts)
+  - Add items with the folder button on a card, by selecting several items, or by drag and drop
+  - An item can be in several folders; drag folders onto other folders to rearrange them
+- Downloads start directly without opening new tabs
+  - `All (N)` downloads every file of an item; the arrow opens a file list that stays open
+  - Download a whole folder (including subfolders) or the selected items at once
+- The floating button is hidden while you are signed out
 - Search by title and creator
 - Resizable panel width
 - Responsive card grid (more columns as panel width grows)
-- Quick download button with hover dropdown links
 - Sync across both library and gifts pages
 - Batched loading (5 pages per batch)
 - Progressive rendering while syncing
@@ -66,14 +72,14 @@ The extension uses `browser.storage.local` (extension storage):
 - `booth-library-cache`
   - Cached library items (`BoothItem[]`)
 - `booth-library-preferences`
-  - User preferences (`favorites`, `hidden`, `tags`)
+  - User preferences (`favorites`, `hidden`, `tags`, `folders`)
 - `booth-library-parser-rules`
   - Cached remote parser selector rules (refreshed every 24 hours)
 
 ## Project Layout
 
 ```text
-entrypoints/background.ts    # fetches remote parser rules (avoids BOOTH page CSP)
+entrypoints/background.ts    # remote parser rules + download queue
 
 entrypoints/content/
   index.tsx                  # content script entry
@@ -86,6 +92,9 @@ hooks/
   useLibrarySearch.ts        # source/filter/search logic
 
 utils/
+  folders.ts                 # folder tree helpers (pure functions)
+  downloads.ts               # download requests + background queue
+  session.ts                 # sign-in check
   parser.ts                  # BOOTH HTML parser
   parserRules.ts             # built-in selectors + remote rule validation/merge
   remoteParserRules.ts       # remote rule fetching + cache
@@ -132,11 +141,17 @@ WXT + React 기반으로 동작하며, BOOTH 라이브러리 페이지에 Shadow
 
 - `https://accounts.booth.pm/*` 오버레이 패널 UI
 - 소스 탭: `Library` / `Gifts`
-- 필터 탭: `All` / `Favorites` / `Hidden` (선택한 소스 기준)
+- 필터 탭: `All` / `Favorites` / `Hidden` (선택한 소스 기준) / `Custom`
+- `Custom` 탭: 하위 폴더까지 만들어 아이템 정리 (Library/Gifts 구분 없음)
+  - 카드의 폴더 버튼, 여러 개 선택, 드래그 앤 드롭으로 폴더에 넣기
+  - 한 아이템을 여러 폴더에 넣을 수 있고, 폴더를 끌어 다른 폴더 안으로 옮길 수 있음
+- 새 탭 없이 바로 다운로드
+  - `All (N)`으로 아이템의 파일 전부 받기, 화살표로 계속 열려 있는 파일 목록 열기
+  - 폴더(하위 폴더 포함) 또는 선택한 아이템을 한꺼번에 받기
+- 로그인하지 않은 상태에서는 플로팅 버튼을 띄우지 않음
 - 제목/작가명 검색
 - 패널 너비 리사이즈
 - 패널 너비에 따라 그리드 열 수 자동 증가
-- 다운로드 버튼 + 호버 드롭다운 링크
 - Library/Gifts 동시 동기화
 - 5페이지 단위 배치 로딩
 - 동기화 중 점진적 렌더링
@@ -186,7 +201,7 @@ bunx tsc --noEmit
 - `booth-library-cache`
   - 라이브러리 아이템 캐시 (`BoothItem[]`)
 - `booth-library-preferences`
-  - 사용자 설정 (`favorites`, `hidden`, `tags`)
+  - 사용자 설정 (`favorites`, `hidden`, `tags`, `folders`)
 - `booth-library-parser-rules`
   - 원격 파서 셀렉터 규칙 캐시 (24시간마다 갱신)
 
