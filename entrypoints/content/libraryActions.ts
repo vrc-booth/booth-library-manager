@@ -6,7 +6,7 @@ export interface LibraryActions {
   toggleHidden: (itemId: string) => void;
   isInAnyFolder: (itemId: string) => boolean;
   openFolderPicker: (itemId: string) => void;
-  downloadFiles: (urls: string[]) => void;
+  openDownloadDialog: (itemId: string) => void;
   isSelectMode: boolean;
   isSelected: (itemId: string) => boolean;
   toggleSelected: (itemId: string) => void;

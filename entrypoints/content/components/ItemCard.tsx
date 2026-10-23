@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type DragEvent, type MouseEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import type { BoothItem } from "../../../types/booth.ts";
 import { useLibraryActions } from "../libraryActions.ts";
 import DownloadIcon from "./DownloadIcon.tsx";
@@ -10,43 +10,11 @@ interface ItemCardProps {
 
 export default function ItemCard({ item }: ItemCardProps) {
   const actions = useLibraryActions();
-  const [isFileListOpen, setIsFileListOpen] = useState(false);
-  const downloadAreaRef = useRef<HTMLDivElement>(null);
 
-  const downloadLinks = item.downloadUrls.filter((link) => link.url.trim().length > 0);
-  const hasMultipleFiles = downloadLinks.length > 1;
+  const fileCount = item.downloadUrls.filter((link) => link.url.trim().length > 0).length;
   const isFavorite = actions.isFavorite(item.id);
   const isSelected = actions.isSelected(item.id);
   const isInFolder = actions.isInAnyFolder(item.id);
-
-  useEffect(() => {
-    if (!isFileListOpen) {
-      return;
-    }
-
-    // Shadow DOM 안에서도 실제로 누른 요소를 알 수 있도록 composedPath를 쓴다.
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.composedPath()[0];
-      if (target instanceof Node && downloadAreaRef.current?.contains(target)) {
-        return;
-      }
-      setIsFileListOpen(false);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsFileListOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown, true);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isFileListOpen]);
 
   const handleCardClick = () => {
     if (actions.isSelectMode) {
@@ -71,20 +39,14 @@ export default function ItemCard({ item }: ItemCardProps) {
     actions.openFolderPicker(item.id);
   };
 
-  const handleDownloadAll = (e: MouseEvent<HTMLButtonElement>) => {
+  const handleDownloadClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    actions.downloadFiles(downloadLinks.map((link) => link.url));
-  };
-
-  const handleToggleFileList = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setIsFileListOpen((prev) => !prev);
+    actions.openDownloadDialog(item.id);
   };
 
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     event.dataTransfer.effectAllowed = "copyMove";
     event.dataTransfer.setData("text/plain", item.title);
-    setIsFileListOpen(false);
     actions.startItemDrag(item.id);
   };
 
@@ -98,9 +60,8 @@ export default function ItemCard({ item }: ItemCardProps) {
         group relative rounded-lg
         bg-white border
         shadow-sm hover:shadow-md hover:z-30
-        transition-all duration-200
+        transition-all duration-200 hover:scale-[1.02]
         cursor-pointer
-        ${isFileListOpen ? "z-30" : "hover:scale-[1.02]"}
         ${isSelected ? "border-[#fc4d50] ring-2 ring-[#fc4d50]/40" : "border-gray-100"}
       `}
     >
@@ -228,84 +189,24 @@ export default function ItemCard({ item }: ItemCardProps) {
           {item.title}
         </h3>
 
-        <div
-          ref={downloadAreaRef}
-          className="relative mt-auto pt-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex gap-0.5">
-            <button
-              onClick={handleDownloadAll}
-              disabled={downloadLinks.length === 0}
-              title={hasMultipleFiles ? `Download all ${downloadLinks.length} files` : downloadLinks[0]?.name}
-              className={`
-                flex-1 min-w-0 flex items-center justify-center gap-1.5
-                px-2 py-1.5 text-[10px] font-medium
-                transition-colors
-                ${hasMultipleFiles ? "rounded-l-md" : "rounded-md"}
-                ${downloadLinks.length === 0
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-[#fc4d50]/10 text-[#fc4d50] hover:bg-[#fc4d50]/20"
-                }
-              `}
-            >
-              <DownloadIcon />
-              <span className="truncate">
-                {downloadLinks.length === 0
-                  ? "No download"
-                  : hasMultipleFiles
-                    ? `All (${downloadLinks.length})`
-                    : "Download"}
-              </span>
-            </button>
-            {hasMultipleFiles && (
-              <button
-                onClick={handleToggleFileList}
-                title="Choose files"
-                aria-expanded={isFileListOpen}
-                className={`
-                  px-1.5 rounded-r-md transition-colors
-                  ${isFileListOpen ? "bg-[#fc4d50]/25 text-[#fc4d50]" : "bg-[#fc4d50]/10 text-[#fc4d50] hover:bg-[#fc4d50]/20"}
-                `}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className={`transition-transform ${isFileListOpen ? "rotate-180" : ""}`}
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {isFileListOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 w-full min-w-[180px] rounded-md border border-gray-200 bg-white shadow-lg p-1">
-              <p className="px-2 pt-1 pb-1.5 text-[10px] text-gray-400">
-                {downloadLinks.length} files
-              </p>
-              <div className="max-h-56 overflow-y-auto">
-                {downloadLinks.map((link, index) => (
-                  <button
-                    key={`${link.url}-${index}`}
-                    onClick={() => actions.downloadFiles([link.url])}
-                    className="w-full flex items-start gap-2 px-2 py-1.5 text-left text-xs text-gray-700 rounded hover:bg-gray-100"
-                    title={link.name}
-                  >
-                    <DownloadIcon className="mt-0.5 shrink-0 text-[#fc4d50]" />
-                    <span className="break-all line-clamp-2">{link.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="mt-auto pt-2">
+          <button
+            onClick={handleDownloadClick}
+            disabled={fileCount === 0}
+            title={fileCount === 0 ? "No downloadable files" : "Choose files to download"}
+            className={`
+              w-full flex items-center justify-center gap-1.5
+              px-2 py-1.5 text-[10px] font-medium rounded-md
+              transition-colors
+              ${fileCount === 0
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-[#fc4d50]/10 text-[#fc4d50] hover:bg-[#fc4d50]/20"
+              }
+            `}
+          >
+            <DownloadIcon />
+            {fileCount === 0 ? "No download" : fileCount > 1 ? `Download (${fileCount})` : "Download"}
+          </button>
         </div>
       </div>
     </div>

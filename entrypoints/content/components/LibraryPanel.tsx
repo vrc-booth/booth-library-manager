@@ -21,10 +21,10 @@ import FolderPickerDialog from "./FolderPickerDialog.tsx";
 import FolderDropTray from "./FolderDropTray.tsx";
 import SelectionBar from "./SelectionBar.tsx";
 import ConfirmDialog from "./ConfirmDialog.tsx";
+import DownloadDialog from "./DownloadDialog.tsx";
 
 const MIN_PANEL_WIDTH = 320;
 const MAX_PANEL_WIDTH = 720;
-const DOWNLOAD_CONFIRM_THRESHOLD = 5;
 const TOAST_DURATION_MS = 3000;
 
 function clampPanelWidth(width: number): number {
@@ -43,6 +43,11 @@ function collectDownloadUrls(items: BoothItem[]): string[] {
 type PickerTarget =
   | { kind: "item"; itemId: string }
   | { kind: "bulk"; itemIds: string[] };
+
+interface DownloadTarget {
+  title: string;
+  itemIds: string[];
+}
 
 interface ConfirmState {
   title: string;
@@ -122,6 +127,7 @@ export default function LibraryPanel({
   const [draggedItemIds, setDraggedItemIds] = useState<string[] | null>(null);
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [downloadTarget, setDownloadTarget] = useState<DownloadTarget | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const isCustomTab = activeTab === "custom";
@@ -177,28 +183,12 @@ export default function LibraryPanel({
     }
   }, []);
 
-  const downloadFiles = useCallback((urls: string[], description?: string) => {
-    if (urls.length === 0) {
-      setToast("No downloadable files");
-      return;
+  const openDownloadDialog = useCallback((itemId: string) => {
+    const item = itemsById.get(itemId);
+    if (item) {
+      setDownloadTarget({ title: item.title, itemIds: [itemId] });
     }
-
-    if (urls.length <= DOWNLOAD_CONFIRM_THRESHOLD) {
-      void startDownloads(urls);
-      return;
-    }
-
-    setConfirmState({
-      title: `Download ${pluralize(urls.length, "file")}?`,
-      message: description ?? "Files will be saved to your browser's download folder one by one.",
-      confirmLabel: "Download",
-      tone: "default",
-      onConfirm: () => {
-        setConfirmState(null);
-        void startDownloads(urls);
-      },
-    });
-  }, [startDownloads]);
+  }, [itemsById]);
 
   const toggleSelected = useCallback((itemId: string) => {
     setSelectedIds((current) => {
@@ -249,20 +239,20 @@ export default function LibraryPanel({
     toggleHidden: onToggleHidden,
     isInAnyFolder: (itemId) => folderItemIdSet.has(itemId),
     openFolderPicker: (itemId) => setPickerTarget({ kind: "item", itemId }),
-    downloadFiles: (urls) => downloadFiles(urls),
+    openDownloadDialog,
     isSelectMode,
     isSelected: (itemId) => selectedIds.has(itemId),
     toggleSelected,
     startItemDrag,
     endItemDrag,
   }), [
-    downloadFiles,
     endItemDrag,
     folderItemIdSet,
     isFavorite,
     isSelectMode,
     onToggleFavorite,
     onToggleHidden,
+    openDownloadDialog,
     selectedIds,
     startItemDrag,
     toggleSelected,
@@ -282,11 +272,22 @@ export default function LibraryPanel({
     if (!activeFolder) {
       return;
     }
-    const itemCount = getItems(collectFolderItemIds(folders, activeFolder.id, true)).length;
-    downloadFiles(
-      activeFolderFileUrls,
-      `All files from ${pluralize(itemCount, "item")} in "${activeFolder.name}" and its subfolders will be saved to your browser's download folder one by one.`,
-    );
+    setDownloadTarget({
+      title: `Download from "${activeFolder.name}" and its subfolders`,
+      itemIds: collectFolderItemIds(folders, activeFolder.id, true),
+    });
+  };
+
+  const handleDownloadSelected = () => {
+    setDownloadTarget({
+      title: `Download from ${pluralize(selectedItemIds.length, "selected item")}`,
+      itemIds: selectedItemIds,
+    });
+  };
+
+  const handleConfirmDownload = (urls: string[]) => {
+    setDownloadTarget(null);
+    void startDownloads(urls);
   };
 
   const handleRequestDeleteFolder = (folder: LibraryFolder) => {
@@ -550,7 +551,7 @@ export default function LibraryPanel({
             onSelectAll={() => setSelectedIds(new Set(items.map((item) => item.id)))}
             onClearSelection={() => setSelectedIds(new Set())}
             onAddToFolder={() => setPickerTarget({ kind: "bulk", itemIds: selectedItemIds })}
-            onDownload={() => downloadFiles(selectedFileUrls)}
+            onDownload={handleDownloadSelected}
             onRemoveFromFolder={handleRemoveFromFolder}
             onDone={handleExitSelectMode}
           />
@@ -581,6 +582,15 @@ export default function LibraryPanel({
             onSelectFolder={handlePickerSelect}
             onCreateFolder={handlePickerCreate}
             onClose={() => setPickerTarget(null)}
+          />
+        )}
+
+        {downloadTarget && (
+          <DownloadDialog
+            title={downloadTarget.title}
+            items={getItems(downloadTarget.itemIds)}
+            onDownload={handleConfirmDownload}
+            onClose={() => setDownloadTarget(null)}
           />
         )}
 
