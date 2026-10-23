@@ -143,7 +143,8 @@ export async function fetchAllLibrary(
           batchPages.push(pageNumber);
         }
 
-        if (batchPages.length === 0) {
+        const lastBatchPage = batchPages.at(-1);
+        if (typeof lastBatchPage !== "number") {
           break;
         }
 
@@ -205,7 +206,7 @@ export async function fetchAllLibrary(
           }
         }
 
-        nextPage = batchPages[batchPages.length - 1] + 1;
+        nextPage = lastBatchPage + 1;
         await delay(BATCH_DELAY_MS);
       }
 

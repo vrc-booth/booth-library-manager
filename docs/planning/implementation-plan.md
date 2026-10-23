@@ -69,7 +69,7 @@ booth-library-manager/
 
 ### 성공 기준
 
-- `pnpm build` 시 manifest.json에 `storage` 퍼미션과 `host_permissions` 포함
+- `bun run build` 시 manifest.json에 `storage` 퍼미션과 `host_permissions` 포함
 - Content script가 `accounts.booth.pm` 에서만 로드됨
 
 ---
@@ -260,7 +260,7 @@ interface SyncProgress {
 ### 성공 기준
 
 - `tsc --noEmit` 통과
-- `pnpm build` 정상 완료
+- `bun run build` 정상 완료
 - Booth 페이지에서 확장프로그램 동작 확인
 
 ---

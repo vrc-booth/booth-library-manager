@@ -27,36 +27,36 @@ This project uses WXT + React and injects an overlay panel (Shadow DOM) into the
 
 ## Tech Stack
 
-- WXT `0.20.x`
+- WXT `0.21.x`
 - React `19`
 - TanStack Query `5`
 - Tailwind CSS `4`
 - TypeScript `5.9`
-- pnpm `10`
+- bun `1.3`
 
 ## Commands
 
 ```bash
-pnpm install
+bun install
 
 # dev (chrome)
-pnpm dev
+bun run dev
 
 # dev (firefox)
-pnpm dev:firefox
+bun run dev:firefox
 
 # production build
-pnpm build
+bun run build
 
 # firefox build
-pnpm build:firefox
+bun run build:firefox
 
 # zip package
-pnpm zip
-pnpm zip:firefox
+bun run zip
+bun run zip:firefox
 
 # type check
-npx tsc --noEmit
+bunx tsc --noEmit
 ```
 
 ## Storage
@@ -128,36 +128,36 @@ WXT + React 기반으로 동작하며, BOOTH 라이브러리 페이지에 Shadow
 
 ### 기술 스택
 
-- WXT `0.20.x`
+- WXT `0.21.x`
 - React `19`
 - TanStack Query `5`
 - Tailwind CSS `4`
 - TypeScript `5.9`
-- pnpm `10`
+- bun `1.3`
 
 ### 명령어
 
 ```bash
-pnpm install
+bun install
 
 # 개발 (Chrome)
-pnpm dev
+bun run dev
 
 # 개발 (Firefox)
-pnpm dev:firefox
+bun run dev:firefox
 
 # 프로덕션 빌드
-pnpm build
+bun run build
 
 # Firefox 빌드
-pnpm build:firefox
+bun run build:firefox
 
 # 배포용 zip
-pnpm zip
-pnpm zip:firefox
+bun run zip
+bun run zip:firefox
 
 # 타입 체크
-npx tsc --noEmit
+bunx tsc --noEmit
 ```
 
 ### 스토리지
