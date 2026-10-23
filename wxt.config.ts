@@ -12,8 +12,19 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   // host_permissions는 두지 않는다. 라이브러리 요청은 콘텐츠 스크립트의 같은 사이트 요청이고,
   // 파일 다운로드는 downloads 권한만으로, GitHub 규칙 파일은 공개 파일이라 권한 없이 받을 수 있다.
-  manifest: ({ command }) => ({
+  manifest: ({ command, browser }) => ({
     ...(command === "serve" ? { key: DEV_EXTENSION_KEY } : {}),
+    // AMO는 새 확장에 데이터 수집 선언을 요구한다. 사용자 데이터를 확장 밖으로 보내지 않으므로 none.
+    ...(browser === "firefox"
+      ? {
+          browser_specific_settings: {
+            gecko: {
+              id: "booth-library-manager@vrc-booth",
+              data_collection_permissions: { required: ["none"] },
+            },
+          },
+        }
+      : {}),
     permissions: ["storage", "downloads"],
     icons: {
       "16": "icons/icon-16.png",
