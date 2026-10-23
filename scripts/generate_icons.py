@@ -50,7 +50,7 @@ def make_icon(size: int) -> Image.Image:
 def main() -> None:
     for size in SIZES:
         icon = make_icon(size)
-        icon.save(f"assets/icons/icon-{size}.png", format="PNG")
+        icon.save(f"public/icons/icon-{size}.png", format="PNG")
 
 
 if __name__ == "__main__":

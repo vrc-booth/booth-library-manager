@@ -1,75 +1,8 @@
 import { type BoothItem, type DownloadFile, type LibraryPage } from "../types/booth.ts";
+import { DEFAULT_PARSER_RULES, type ParserRules } from "./parserRules.ts";
 
 const BOOTH_BASE_URL = "https://booth.pm";
 const ACCOUNTS_BASE_URL = "https://accounts.booth.pm";
-
-const ITEM_CONTAINER_SELECTORS = [
-  ".l-library-item",
-  "[data-product-id]",
-  ".library-item",
-  "main > div.w-full > div[class*='bg-white'][class*='p-16']",
-  "main div[class*='desktop:rounded-8'][class*='bg-white'][class*='p-16']",
-] as const;
-
-const MAIN_AREA_SELECTORS = ["main", "[role='main']", ".l-main", ".main-content", "#main"] as const;
-
-const ITEM_LINK_SELECTORS = [
-  "a[href*='://booth.pm/items/']",
-  "a[href*='.booth.pm/items/']",
-  "a[href*='booth.pm/items/']",
-  "a[href^='/items/']",
-  "a[href*='/items/']",
-] as const;
-
-const TITLE_SELECTORS = [
-  ".text-text-default.font-bold.text-16.mb-8.break-all",
-  ".text-text-default.font-bold.text-16.break-all",
-  ".item-name",
-  ".library-item-title",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "[data-title]",
-] as const;
-
-const CREATOR_SELECTORS = [
-  ".text-14.text-text-gray600.break-all",
-  ".shop-name",
-  ".creator",
-  ".item-creator",
-  ".library-item-shop",
-  "[data-shop-name]",
-] as const;
-
-const THUMBNAIL_SELECTORS = ["img", "[data-thumbnail] img", ".thumbnail img", ".item-thumbnail img"] as const;
-
-const DOWNLOAD_LINK_SELECTORS = [
-  "a[href*='/download/']",
-  "a[href*='download']",
-  "a[data-download-url]",
-] as const;
-
-const ITEM_CARD_LINK_SELECTORS = [
-  "a[href*='/items/']",
-  "a[href*='://booth.pm/items/']",
-  "a[href*='://booth.pm/ko/items/']",
-] as const;
-
-const CURRENT_PAGE_SELECTORS = [
-  "[aria-current='page']",
-  ".pagination .current",
-  ".pagination .is-current",
-  ".pager .current",
-] as const;
-
-const NEXT_PAGE_SELECTORS = [
-  "a[rel='next']",
-  ".pagination a.next",
-  ".pager a.next",
-  "a[aria-label*='Next']",
-  "a[aria-label*='next']",
-] as const;
 
 function queryAll<T extends Element>(root: ParentNode, selectors: readonly string[]): T[] {
   const found: T[] = [];
@@ -82,6 +15,27 @@ function queryAll<T extends Element>(root: ParentNode, selectors: readonly strin
   }
 
   return found;
+}
+
+function queryFirst<T extends Element>(root: ParentNode, selectors: readonly string[]): T | null {
+  for (const selector of selectors) {
+    const element = root.querySelector<T>(selector);
+    if (element) {
+      return element;
+    }
+  }
+  return null;
+}
+
+function hasAnyMatch(root: ParentNode, selectors: readonly string[]): boolean {
+  return selectors.some((selector) => root.querySelector(selector) !== null);
+}
+
+function closestOf(element: Element, selectors: readonly string[]): Element | null {
+  if (selectors.length === 0) {
+    return null;
+  }
+  return element.closest(selectors.join(", "));
 }
 
 function dedupeElements<T extends Element>(elements: T[]): T[] {
@@ -165,8 +119,8 @@ function normalizeUrl(url: string): string {
   }
 }
 
-function findItemLink(root: Element): HTMLAnchorElement | null {
-  const links = queryAll<HTMLAnchorElement>(root, ITEM_LINK_SELECTORS);
+function findItemLink(root: Element, rules: ParserRules): HTMLAnchorElement | null {
+  const links = queryAll<HTMLAnchorElement>(root, rules.itemLink);
   for (const link of links) {
     const href = normalizeUrl(link.getAttribute("href") ?? "");
     if (href.includes("/items/")) {
@@ -176,8 +130,8 @@ function findItemLink(root: Element): HTMLAnchorElement | null {
   return null;
 }
 
-function extractTitle(root: Element, itemLink: HTMLAnchorElement | null): string {
-  for (const selector of TITLE_SELECTORS) {
+function extractTitle(root: Element, rules: ParserRules, itemLink: HTMLAnchorElement | null): string {
+  for (const selector of rules.title) {
     const element = root.querySelector<HTMLElement>(selector);
     const text = normalizeText(element?.textContent);
     if (text.length > 0) {
@@ -193,8 +147,8 @@ function extractTitle(root: Element, itemLink: HTMLAnchorElement | null): string
   return normalizeText(itemLink?.textContent);
 }
 
-function extractCreator(root: Element, itemLink: HTMLAnchorElement | null): string {
-  for (const selector of CREATOR_SELECTORS) {
+function extractCreator(root: Element, rules: ParserRules, itemLink: HTMLAnchorElement | null): string {
+  for (const selector of rules.creator) {
     const element = root.querySelector<HTMLElement>(selector);
     const text = normalizeText(element?.textContent);
     if (text.length > 0) {
@@ -223,8 +177,8 @@ function extractCreator(root: Element, itemLink: HTMLAnchorElement | null): stri
   return "Unknown creator";
 }
 
-function extractThumbnail(root: Element): string {
-  for (const selector of THUMBNAIL_SELECTORS) {
+function extractThumbnail(root: Element, rules: ParserRules): string {
+  for (const selector of rules.thumbnail) {
     const image = root.querySelector<HTMLImageElement>(selector);
     if (!image) {
       continue;
@@ -240,15 +194,13 @@ function extractThumbnail(root: Element): string {
   return "";
 }
 
-function extractDownloadUrls(root: Element): DownloadFile[] {
+function extractDownloadUrls(root: Element, rules: ParserRules): DownloadFile[] {
   const files: DownloadFile[] = [];
 
   // Primary: parse js-download-button elements (BOOTH library pattern)
-  const downloadButtons = Array.from(root.querySelectorAll<HTMLElement>(".js-download-button"));
+  const downloadButtons = dedupeElements(queryAll<HTMLElement>(root, rules.downloadButton));
   for (const button of downloadButtons) {
-    const isOtherDownloadsButton =
-      button.classList.contains("w-full") ||
-      button.getAttribute("data-test") === "other-downloads-button";
+    const isOtherDownloadsButton = rules.otherDownloadsButton.some((selector) => button.matches(selector));
 
     if (isOtherDownloadsButton) {
       continue;
@@ -256,14 +208,16 @@ function extractDownloadUrls(root: Element): DownloadFile[] {
 
     const href = button.getAttribute("data-href");
     // Find the filename from the sibling text-14 div within the same row container
-    const rowContainer = button.closest(".mt-16, [class*='desktop:flex']");
+    const rowContainer = closestOf(button, rules.downloadRow);
     let fileName = normalizeText(button.getAttribute("data-label"));
 
     if (rowContainer) {
-      const fileNameEl = rowContainer.querySelector<HTMLElement>(".text-14");
-      const fileNameText = normalizeText(fileNameEl?.textContent);
-      if (fileNameText.length > 0) {
-        fileName = fileNameText;
+      for (const selector of rules.downloadFileName) {
+        const fileNameText = normalizeText(rowContainer.querySelector<HTMLElement>(selector)?.textContent);
+        if (fileNameText.length > 0) {
+          fileName = fileNameText;
+          break;
+        }
       }
     }
 
@@ -277,7 +231,7 @@ function extractDownloadUrls(root: Element): DownloadFile[] {
 
   // Fallback: parse traditional <a> download links
   if (files.length === 0) {
-    const links = dedupeElements(queryAll<HTMLAnchorElement>(root, DOWNLOAD_LINK_SELECTORS));
+    const links = dedupeElements(queryAll<HTMLAnchorElement>(root, rules.downloadLink));
     for (const link of links) {
       const href = normalizeUrl(link.getAttribute("href") ?? link.getAttribute("data-download-url") ?? "");
       if (href.length === 0) {
@@ -294,8 +248,8 @@ function extractDownloadUrls(root: Element): DownloadFile[] {
   return dedupeDownloads(files);
 }
 
-function extractPurchasedAt(root: Element): string | undefined {
-  const time = root.querySelector<HTMLTimeElement>("time[datetime], time");
+function extractPurchasedAt(root: Element, rules: ParserRules): string | undefined {
+  const time = queryFirst<HTMLElement>(root, rules.purchasedAt);
   if (!time) {
     return undefined;
   }
@@ -309,29 +263,29 @@ function extractPurchasedAt(root: Element): string | undefined {
   return text.length > 0 ? text : undefined;
 }
 
-function getItemContainers(document: Document): Element[] {
+function getItemContainers(document: Document, rules: ParserRules): Element[] {
   const isLikelyItemCard = (element: Element): boolean => {
-    const hasItemLink = queryAll<HTMLAnchorElement>(element, ITEM_CARD_LINK_SELECTORS).length > 0;
-    const hasThumbnail = element.querySelector(".l-library-item-thumbnail, img[src*='booth.pximg.net']") !== null;
-    const hasDownloadButton = element.querySelector(".js-download-button") !== null;
+    const hasItemLink = hasAnyMatch(element, rules.itemCardLink);
+    const hasThumbnail = hasAnyMatch(element, rules.itemCardThumbnail);
+    const hasDownloadButton = hasAnyMatch(element, rules.downloadButton);
 
     return hasItemLink && (hasThumbnail || hasDownloadButton);
   };
 
-  for (const selector of ITEM_CONTAINER_SELECTORS) {
+  for (const selector of rules.itemContainer) {
     const items = Array.from(document.querySelectorAll(selector)).filter(isLikelyItemCard);
     if (items.length > 0) {
       return dedupeElements(items);
     }
   }
 
-  const scopes = queryAll<Element>(document, MAIN_AREA_SELECTORS);
+  const scopes = queryAll<Element>(document, rules.mainArea);
   const containers: Element[] = [];
   for (const scope of scopes) {
-    const links = queryAll<HTMLAnchorElement>(scope, ITEM_LINK_SELECTORS);
+    const links = queryAll<HTMLAnchorElement>(scope, rules.itemLink);
     for (const link of links) {
       const container =
-        link.closest("div[class*='desktop:rounded-8'][class*='bg-white'][class*='p-16']") ||
+        closestOf(link, rules.itemCardFallbackContainer) ||
         link.closest("article, li, section, div") ||
         link;
       containers.push(container);
@@ -351,8 +305,8 @@ function parsePageNumber(value: string): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function detectCurrentPage(document: Document): number {
-  for (const selector of CURRENT_PAGE_SELECTORS) {
+function detectCurrentPage(document: Document, rules: ParserRules): number {
+  for (const selector of rules.currentPage) {
     const element = document.querySelector<HTMLElement>(selector);
     const parsed = parsePageNumber(normalizeText(element?.textContent));
     if (parsed && parsed > 0) {
@@ -369,12 +323,8 @@ function detectCurrentPage(document: Document): number {
   return 1;
 }
 
-function detectTotalPages(document: Document): number | undefined {
-  const pageCandidates = queryAll<HTMLAnchorElement>(document, [
-    ".pagination a",
-    ".pager a",
-    "a[href*='?page=']",
-  ]);
+function detectTotalPages(document: Document, rules: ParserRules): number | undefined {
+  const pageCandidates = queryAll<HTMLAnchorElement>(document, rules.pageLink);
 
   let maxPage = 0;
 
@@ -399,8 +349,13 @@ function detectTotalPages(document: Document): number | undefined {
   return maxPage > 0 ? maxPage : undefined;
 }
 
-function detectHasNextPage(document: Document, currentPage: number, totalPages?: number): boolean {
-  for (const selector of NEXT_PAGE_SELECTORS) {
+function detectHasNextPage(
+  document: Document,
+  rules: ParserRules,
+  currentPage: number,
+  totalPages?: number,
+): boolean {
+  for (const selector of rules.nextPage) {
     const link = document.querySelector<HTMLAnchorElement>(selector);
     if (link && normalizeUrl(link.getAttribute("href") ?? "").length > 0) {
       return true;
@@ -427,8 +382,8 @@ function detectHasNextPage(document: Document, currentPage: number, totalPages?:
   return false;
 }
 
-function parseItem(container: Element, index: number): BoothItem | null {
-  const itemLink = findItemLink(container);
+function parseItem(container: Element, rules: ParserRules, index: number): BoothItem | null {
+  const itemLink = findItemLink(container, rules);
   const href = itemLink?.getAttribute("href") ?? null;
   const boothUrl = href ? normalizeUrl(href) : "";
   const extractedId = extractItemId(container, href);
@@ -438,11 +393,11 @@ function parseItem(container: Element, index: number): BoothItem | null {
   }
 
   const id = extractedId ?? `unknown-${index + 1}`;
-  const title = extractTitle(container, itemLink) || "Untitled item";
-  const creator = extractCreator(container, itemLink);
-  const thumbnailUrl = extractThumbnail(container);
-  const downloadUrls = extractDownloadUrls(container);
-  const purchasedAt = extractPurchasedAt(container);
+  const title = extractTitle(container, rules, itemLink) || "Untitled item";
+  const creator = extractCreator(container, rules, itemLink);
+  const thumbnailUrl = extractThumbnail(container, rules);
+  const downloadUrls = extractDownloadUrls(container, rules);
+  const purchasedAt = extractPurchasedAt(container, rules);
 
   const item: BoothItem = {
     id,
@@ -460,16 +415,16 @@ function parseItem(container: Element, index: number): BoothItem | null {
   return item;
 }
 
-export function parseLibraryPage(html: string): LibraryPage {
+export function parseLibraryPage(html: string, rules: ParserRules = DEFAULT_PARSER_RULES): LibraryPage {
   const parser = new DOMParser();
   const document = parser.parseFromString(html ?? "", "text/html");
 
-  const containers = getItemContainers(document);
+  const containers = getItemContainers(document, rules);
   const seenIds = new Set<string>();
   const items: BoothItem[] = [];
 
   for (const [index, container] of containers.entries()) {
-    const item = parseItem(container, index);
+    const item = parseItem(container, rules, index);
     if (!item || seenIds.has(item.id)) {
       continue;
     }
@@ -478,9 +433,9 @@ export function parseLibraryPage(html: string): LibraryPage {
     items.push(item);
   }
 
-  const currentPage = detectCurrentPage(document);
-  const totalPages = detectTotalPages(document);
-  const hasNextPage = detectHasNextPage(document, currentPage, totalPages);
+  const currentPage = detectCurrentPage(document, rules);
+  const totalPages = detectTotalPages(document, rules);
+  const hasNextPage = detectHasNextPage(document, rules, currentPage, totalPages);
 
   if (typeof totalPages === "number") {
     return {

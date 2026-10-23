@@ -10,41 +10,41 @@ No official Booth API — data is fetched via DOM parsing of `https://accounts.b
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Extension Framework | WXT | 0.20.x |
+| Extension Framework | WXT | 0.21.x |
 | UI Framework | React | 19.x |
 | State/Cache | TanStack React Query | 5.x |
 | Styling | Tailwind CSS (Vite plugin) | 4.x |
 | Language | TypeScript | 5.9.x |
-| Package Manager | pnpm | 10.x |
+| Package Manager | Bun | 1.3.x |
 | Build Tool | Vite (via WXT) | — |
 
 ## Build & Dev Commands
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Development (Chrome, with hot reload)
-pnpm dev
+bun run dev
 
 # Development (Firefox)
-pnpm dev:firefox
+bun run dev:firefox
 
 # Production build (Chrome)
-pnpm build
+bun run build
 
 # Production build (Firefox)
-pnpm build:firefox
+bun run build:firefox
 
 # Package for distribution
-pnpm zip
-pnpm zip:firefox
+bun run zip
+bun run zip:firefox
 
 # Type check
-npx tsc --noEmit
+bunx tsc --noEmit
 
 # Prepare WXT types (runs automatically on install via postinstall)
-pnpm postinstall
+bun run postinstall
 ```
 
 ### Testing
@@ -59,12 +59,17 @@ No test framework is configured yet. When adding tests:
 ```
 booth-library-manager/
 ├── entrypoints/           # WXT entry points (content scripts, background, etc.)
+│   ├── background.ts      # Fetches remote parser rules (avoids BOOTH page CSP)
 │   └── content/           # Content script — injected into Booth.pm pages
 │       ├── index.tsx       # defineContentScript + Shadow DOM setup
 │       ├── App.tsx         # Root component (QueryClientProvider, state)
 │       └── components/     # UI components
 ├── assets/
 │   └── tailwind.css       # Tailwind entry point (@import "tailwindcss")
+├── public/
+│   └── icons/             # Extension icons, copied as-is to the build output
+├── rules/
+│   └── parser-rules.json  # Remote parser selectors, served from GitHub `main`
 ├── docs/planning/          # Dev planning documents (Korean)
 ├── wxt.config.ts           # WXT configuration (Vite plugins, manifest, modules)
 ├── tsconfig.json           # TypeScript config (extends .wxt/tsconfig.json)
@@ -87,7 +92,7 @@ src/                       # Will hold non-entrypoint source code
 ### TypeScript
 
 - **Strict mode** — never use `as any`, `@ts-ignore`, or `@ts-expect-error`
-- **Always run `npx tsc --noEmit`** after editing `.ts`/`.tsx` files
+- **Always run `bunx tsc --noEmit`** after editing `.ts`/`.tsx` files
 - Use `interface` for component props (e.g., `interface FloatingButtonProps { ... }`)
 - Path alias: `@/*` maps to project root (configured in tsconfig.json)
 - `allowImportingTsExtensions` is enabled — use `.tsx` extensions in imports
@@ -170,12 +175,13 @@ Declared in `wxt.config.ts` under `manifest.permissions`:
 2. **Shadow DOM isolation** — prevents style conflicts with host page
 3. **Client-side parsing** — no backend; fetches Booth library pages and parses HTML
 4. **React Query caching** — parsed data kept in memory cache, user prefs in Chrome Storage
-5. **pnpm** — enforced via `packageManager` field in package.json
+5. **Bun** — enforced via `packageManager` field in package.json
+6. **Remote parser selectors** — `rules/parser-rules.json` is fetched from GitHub and prepended to the built-in defaults in `utils/parserRules.ts`. It must stay a plain list of CSS selector strings: never add conditions, actions, regex, or anything the extension would interpret as logic (Chrome Web Store remote code policy)
 
 ## Don'ts
 
 - Don't edit files in `.wxt/` or `dist/` — they are auto-generated
-- Don't use `npm` or `yarn` — this project uses `pnpm`
+- Don't use `npm`, `yarn`, or `pnpm` — this project uses `bun`
 - Don't add barrel exports (`index.ts` re-exports)
 - Don't suppress TypeScript errors
 - Don't commit code that fails `tsc --noEmit`

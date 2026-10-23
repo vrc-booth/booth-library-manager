@@ -33,11 +33,12 @@ export default function ItemCard({
   const handleQuickDownload = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    if (downloadLinks.length === 0) {
+    const firstLink = downloadLinks[0];
+    if (!firstLink) {
       return;
     }
 
-    window.open(downloadLinks[0].url, "_blank", "noopener,noreferrer");
+    window.open(firstLink.url, "_blank", "noopener,noreferrer");
   };
 
   return (

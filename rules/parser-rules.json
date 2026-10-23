@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "selectors": {
+    "itemContainer": [],
+    "mainArea": [],
+    "itemLink": [],
+    "itemCardLink": [],
+    "itemCardThumbnail": [],
+    "itemCardFallbackContainer": [],
+    "title": [],
+    "creator": [],
+    "thumbnail": [],
+    "downloadButton": [],
+    "otherDownloadsButton": [],
+    "downloadRow": [],
+    "downloadFileName": [],
+    "downloadLink": [],
+    "purchasedAt": [],
+    "currentPage": [],
+    "pageLink": [],
+    "nextPage": []
+  }
+}

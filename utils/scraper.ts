@@ -1,4 +1,5 @@
 import { parseLibraryPage } from "./parser.ts";
+import { getParserRules, refreshParserRules } from "./remoteParserRules.ts";
 import { type BoothItem, type LibraryPage, type LibrarySource, type SyncProgress } from "../types/booth.ts";
 
 const LIBRARY_BASE_URL = "https://accounts.booth.pm/library";
@@ -47,7 +48,15 @@ export async function fetchLibraryPage(page: number, path = ""): Promise<Library
   }
 
   const html = await response.text();
-  const parsed = parseLibraryPage(html);
+  let parsed = parseLibraryPage(html, await getParserRules());
+
+  // 아이템이 하나도 안 잡히면 BOOTH 마크업이 바뀌었을 수 있으니 원격 규칙을 다시 받아 한 번 더 파싱한다.
+  if (parsed.items.length === 0) {
+    const refreshedRules = await refreshParserRules();
+    if (refreshedRules) {
+      parsed = parseLibraryPage(html, refreshedRules);
+    }
+  }
 
   return {
     ...parsed,
@@ -143,7 +152,8 @@ export async function fetchAllLibrary(
           batchPages.push(pageNumber);
         }
 
-        if (batchPages.length === 0) {
+        const lastBatchPage = batchPages.at(-1);
+        if (typeof lastBatchPage !== "number") {
           break;
         }
 
@@ -205,7 +215,7 @@ export async function fetchAllLibrary(
           }
         }
 
-        nextPage = batchPages[batchPages.length - 1] + 1;
+        nextPage = lastBatchPage + 1;
         await delay(BATCH_DELAY_MS);
       }
 
