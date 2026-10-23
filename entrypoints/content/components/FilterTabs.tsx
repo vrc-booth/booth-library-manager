@@ -6,16 +6,14 @@ interface FilterTabsProps {
   totalCount: number;
   favoritesCount: number;
   hiddenCount: number;
-  customCount: number;
 }
 
-type CountKey = keyof Pick<FilterTabsProps, "totalCount" | "favoritesCount" | "hiddenCount" | "customCount">;
+type CountKey = keyof Pick<FilterTabsProps, "totalCount" | "favoritesCount" | "hiddenCount">;
 
 const TABS: { key: FilterTab; label: string; countKey: CountKey }[] = [
   { key: "all", label: "All", countKey: "totalCount" },
   { key: "favorites", label: "Favorites", countKey: "favoritesCount" },
   { key: "hidden", label: "Hidden", countKey: "hiddenCount" },
-  { key: "custom", label: "Custom", countKey: "customCount" },
 ];
 
 export default function FilterTabs({
@@ -24,13 +22,11 @@ export default function FilterTabs({
   totalCount,
   favoritesCount,
   hiddenCount,
-  customCount,
 }: FilterTabsProps) {
   const counts: Record<CountKey, number> = {
     totalCount,
     favoritesCount,
     hiddenCount,
-    customCount,
   };
 
   return (

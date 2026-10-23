@@ -130,7 +130,7 @@ export default function LibraryPanel({
   const [downloadTarget, setDownloadTarget] = useState<DownloadTarget | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const isCustomTab = activeTab === "custom";
+  const isCustomTab = activeSourceTab === "custom";
   const isInsideFolder = isCustomTab && activeFolderId !== null;
   const activeFolder = findFolder(folders, activeFolderId);
 
@@ -475,22 +475,23 @@ export default function LibraryPanel({
         {/* Controls */}
         <div className="px-4 py-3 space-y-3 border-b border-gray-100 shrink-0">
           <SearchBar value={searchQuery} onChange={onSearchChange} />
-          {!isCustomTab && (
-            <SourceTabs
-              activeSourceTab={activeSourceTab}
-              onSourceTabChange={onSourceTabChange}
-              libraryCount={libraryCount}
-              giftsCount={giftsCount}
-            />
-          )}
-          <FilterTabs
-            activeTab={activeTab}
-            onTabChange={onTabChange}
-            totalCount={activeSourceTab === "gifts" ? giftsCount : libraryCount}
-            favoritesCount={favoritesCount}
-            hiddenCount={hiddenCount}
+          <SourceTabs
+            activeSourceTab={activeSourceTab}
+            onSourceTabChange={onSourceTabChange}
+            libraryCount={libraryCount}
+            giftsCount={giftsCount}
             customCount={customCount}
           />
+          {/* Custom은 폴더로 보여주므로 All/Favorites/Hidden 필터가 해당하지 않는다. */}
+          {!isCustomTab && (
+            <FilterTabs
+              activeTab={activeTab}
+              onTabChange={onTabChange}
+              totalCount={totalCount}
+              favoritesCount={favoritesCount}
+              hiddenCount={hiddenCount}
+            />
+          )}
           <SyncButton
             onSync={onSync}
             isSyncing={isSyncing}

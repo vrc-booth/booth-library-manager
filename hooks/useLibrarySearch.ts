@@ -60,7 +60,7 @@ export function useLibrarySearch({ items, favorites, hidden, folders }: UseLibra
   const filteredItems = useMemo(() => {
     let result: BoothItem[];
 
-    if (activeTab === "custom") {
+    if (activeSourceTab === "custom") {
       result = customItems;
     } else if (activeTab === "favorites") {
       result = sourceItems.filter((item) => favoriteSet.has(item.id));
@@ -76,7 +76,7 @@ export function useLibrarySearch({ items, favorites, hidden, folders }: UseLibra
     }
 
     return result.filter((item) => matchesQuery(item, normalizedQuery));
-  }, [activeTab, customItems, favoriteSet, hiddenSet, searchQuery, sourceItems]);
+  }, [activeSourceTab, activeTab, customItems, favoriteSet, hiddenSet, searchQuery, sourceItems]);
 
   const sourceCounts = useMemo(() => {
     let libraryCount = 0;
@@ -96,7 +96,7 @@ export function useLibrarySearch({ items, favorites, hidden, folders }: UseLibra
     };
   }, [items]);
 
-  const totalCount = activeTab === "custom" ? customItems.length : sourceItems.length;
+  const totalCount = activeSourceTab === "custom" ? customItems.length : sourceItems.length;
 
   const favoritesCount = useMemo(() => {
     return sourceItems.filter((item) => favoriteSet.has(item.id)).length;

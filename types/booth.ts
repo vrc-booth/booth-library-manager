@@ -48,6 +48,6 @@ export interface SyncProgress {
   source?: LibrarySource;
 }
 
-export type FilterTab = "all" | "favorites" | "hidden" | "custom";
+export type FilterTab = "all" | "favorites" | "hidden";
 
-export type SourceTab = "library" | "gifts";
+export type SourceTab = "library" | "gifts" | "custom";
