@@ -21,7 +21,7 @@ This project uses WXT + React and injects an overlay panel (Shadow DOM) into the
   - Folders (including subfolders) and selected items use the same dialog, grouped by item
 - The floating button is hidden while you are signed out
 - Search by title and creator
-- Resizable panel width
+- Resizable panel width (remembered for next time)
 - Responsive card grid (more columns as panel width grows)
 - Sync across both library and gifts pages
 - Batched loading (5 pages per batch)
@@ -75,6 +75,8 @@ The extension uses `browser.storage.local` (extension storage):
   - User preferences (`favorites`, `hidden`, `tags`, `folders`)
 - `booth-library-parser-rules`
   - Cached remote parser selector rules (refreshed every 24 hours)
+- `booth-library-panel-width`
+  - Last panel width in pixels
 
 ## Project Layout
 
@@ -150,7 +152,7 @@ WXT + React 기반으로 동작하며, BOOTH 라이브러리 페이지에 Shadow
   - 폴더(하위 폴더 포함)나 선택한 아이템도 같은 모달에서 아이템별로 골라 한꺼번에 받기
 - 로그인하지 않은 상태에서는 플로팅 버튼을 띄우지 않음
 - 제목/작가명 검색
-- 패널 너비 리사이즈
+- 패널 너비 리사이즈 (다음에 열 때도 유지)
 - 패널 너비에 따라 그리드 열 수 자동 증가
 - Library/Gifts 동시 동기화
 - 5페이지 단위 배치 로딩
@@ -204,6 +206,8 @@ bunx tsc --noEmit
   - 사용자 설정 (`favorites`, `hidden`, `tags`, `folders`)
 - `booth-library-parser-rules`
   - 원격 파서 셀렉터 규칙 캐시 (24시간마다 갱신)
+- `booth-library-panel-width`
+  - 마지막으로 조절한 패널 너비(px)
 
 ### 참고
 

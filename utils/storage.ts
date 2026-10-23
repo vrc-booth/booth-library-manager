@@ -202,3 +202,14 @@ export async function removeTag(itemId: string, tag: string): Promise<UserPrefer
   await savePreferences(updated);
   return updated;
 }
+
+const PANEL_WIDTH_KEY = "booth-library-panel-width";
+
+export async function getPanelWidth(): Promise<number | null> {
+  const stored = await storageGet<unknown>(PANEL_WIDTH_KEY);
+  return typeof stored === "number" && Number.isFinite(stored) ? stored : null;
+}
+
+export async function savePanelWidth(width: number): Promise<void> {
+  await storageSet(PANEL_WIDTH_KEY, Math.round(width));
+}

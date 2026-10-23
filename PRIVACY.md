@@ -27,6 +27,9 @@
   - GitHub에서 내려받은 BOOTH 페이지 해석용 CSS 셀렉터 목록과 받은 시각
   - 사용자 정보는 포함되지 않습니다.
   - 저장 키: `booth-library-parser-rules`
+- **화면 설정(로컬 저장)**
+  - 마지막으로 조절한 사이드바 너비
+  - 저장 키: `booth-library-panel-width`
 
 ## 3) 데이터 사용 목적
 

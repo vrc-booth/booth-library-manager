@@ -4,6 +4,7 @@ import { useLibraryFetcher } from "../../hooks/useLibraryFetcher.ts";
 import { useUserPreferences } from "../../hooks/useUserPreferences.ts";
 import { useLibrarySearch } from "../../hooks/useLibrarySearch.ts";
 import { useLoginStatus } from "../../hooks/useLoginStatus.ts";
+import { usePanelWidth } from "../../hooks/usePanelWidth.ts";
 import FloatingButton from "./components/FloatingButton.tsx";
 import LibraryPanel from "./components/LibraryPanel.tsx";
 
@@ -18,7 +19,7 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const [isOpen, setIsOpen] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(384);
+  const [panelWidth, setPanelWidth] = usePanelWidth();
 
   const { items, syncProgress, isSyncing, sync, error } = useLibraryFetcher({
     isPanelOpen: isOpen,
@@ -58,7 +59,7 @@ function AppContent() {
   const handleClose = () => setIsOpen(false);
   const handlePanelWidthChange = useCallback((width: number) => {
     setPanelWidth(width);
-  }, []);
+  }, [setPanelWidth]);
   const handleSync = useCallback(() => {
     sync({ includeGifts: true });
   }, [sync]);

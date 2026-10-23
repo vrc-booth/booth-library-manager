@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BoothItem, FilterTab, LibraryFolder, SourceTab, SyncProgress } from "../../../types/booth.ts";
 import type { FolderActions } from "../../../hooks/useUserPreferences.ts";
+import { clampPanelWidth } from "../../../hooks/usePanelWidth.ts";
 import {
   collectFolderItemIds,
   findFolder,
@@ -23,13 +24,7 @@ import SelectionBar from "./SelectionBar.tsx";
 import ConfirmDialog from "./ConfirmDialog.tsx";
 import DownloadDialog from "./DownloadDialog.tsx";
 
-const MIN_PANEL_WIDTH = 320;
-const MAX_PANEL_WIDTH = 720;
 const TOAST_DURATION_MS = 3000;
-
-function clampPanelWidth(width: number): number {
-  return Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, width));
-}
 
 function pluralize(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
