@@ -59,12 +59,15 @@ No test framework is configured yet. When adding tests:
 ```
 booth-library-manager/
 ├── entrypoints/           # WXT entry points (content scripts, background, etc.)
+│   ├── background.ts      # Fetches remote parser rules (avoids BOOTH page CSP)
 │   └── content/           # Content script — injected into Booth.pm pages
 │       ├── index.tsx       # defineContentScript + Shadow DOM setup
 │       ├── App.tsx         # Root component (QueryClientProvider, state)
 │       └── components/     # UI components
 ├── assets/
 │   └── tailwind.css       # Tailwind entry point (@import "tailwindcss")
+├── rules/
+│   └── parser-rules.json  # Remote parser selectors, served from GitHub `main`
 ├── docs/planning/          # Dev planning documents (Korean)
 ├── wxt.config.ts           # WXT configuration (Vite plugins, manifest, modules)
 ├── tsconfig.json           # TypeScript config (extends .wxt/tsconfig.json)
@@ -171,6 +174,7 @@ Declared in `wxt.config.ts` under `manifest.permissions`:
 3. **Client-side parsing** — no backend; fetches Booth library pages and parses HTML
 4. **React Query caching** — parsed data kept in memory cache, user prefs in Chrome Storage
 5. **Bun** — enforced via `packageManager` field in package.json
+6. **Remote parser selectors** — `rules/parser-rules.json` is fetched from GitHub and prepended to the built-in defaults in `utils/parserRules.ts`. It must stay a plain list of CSS selector strings: never add conditions, actions, regex, or anything the extension would interpret as logic (Chrome Web Store remote code policy)
 
 ## Don'ts
 

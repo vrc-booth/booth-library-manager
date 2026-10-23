@@ -67,10 +67,14 @@ The extension uses `browser.storage.local` (extension storage):
   - Cached library items (`BoothItem[]`)
 - `booth-library-preferences`
   - User preferences (`favorites`, `hidden`, `tags`)
+- `booth-library-parser-rules`
+  - Cached remote parser selector rules (refreshed every 24 hours)
 
 ## Project Layout
 
 ```text
+entrypoints/background.ts    # fetches remote parser rules (avoids BOOTH page CSP)
+
 entrypoints/content/
   index.tsx                  # content script entry
   App.tsx                    # root app wiring
@@ -83,19 +87,34 @@ hooks/
 
 utils/
   parser.ts                  # BOOTH HTML parser
+  parserRules.ts             # built-in selectors + remote rule validation/merge
+  remoteParserRules.ts       # remote rule fetching + cache
   scraper.ts                 # page fetching + batch orchestration
   storage.ts                 # preferences storage wrapper
   libraryCache.ts            # item cache storage wrapper
 
 types/
   booth.ts                   # shared types
+
+rules/
+  parser-rules.json          # remote parser selectors (served from GitHub)
 ```
 
 ## Notes
 
 - BOOTH has no official public API for this workflow, so parsing depends on DOM structure.
-- If BOOTH markup changes, selectors in `utils/parser.ts` may need updates.
 - The panel is rendered in Shadow DOM with z-index above page overlays.
+
+## Updating Parser Selectors Without a Store Release
+
+When BOOTH changes class names or attributes, add selectors to `rules/parser-rules.json` and push to `main`.
+Installed extensions fetch the file from `raw.githubusercontent.com` and pick it up within 24 hours, or within 1 hour when a page parses to zero items.
+
+- Remote selectors are tried first; the built-in defaults in `utils/parserRules.ts` stay as the fallback.
+- Only CSS selector strings are accepted. Invalid selectors and unknown keys are ignored.
+- If the file can't be fetched or fails validation, the extension uses the last cached rules, then the built-in defaults.
+- Structural changes (data moved to a separate API, a modal, or embedded JSON) still need a code change and a store release.
+- Bump `schemaVersion` only for a breaking format change. Older extension versions ignore files with an unknown `schemaVersion`.
 
 ---
 
@@ -168,9 +187,21 @@ bunx tsc --noEmit
   - 라이브러리 아이템 캐시 (`BoothItem[]`)
 - `booth-library-preferences`
   - 사용자 설정 (`favorites`, `hidden`, `tags`)
+- `booth-library-parser-rules`
+  - 원격 파서 셀렉터 규칙 캐시 (24시간마다 갱신)
 
 ### 참고
 
 - BOOTH는 이 워크플로우용 공식 공개 API가 없어 HTML 파싱에 의존합니다.
-- BOOTH 마크업이 바뀌면 `utils/parser.ts` 셀렉터 업데이트가 필요할 수 있습니다.
 - 패널은 Shadow DOM으로 렌더링되며 페이지 오버레이보다 높은 z-index로 표시됩니다.
+
+### 스토어 배포 없이 파서 셀렉터 업데이트하기
+
+BOOTH가 클래스 이름이나 속성을 바꾸면 `rules/parser-rules.json`에 셀렉터를 추가하고 `main`에 push합니다.
+설치된 확장은 `raw.githubusercontent.com`에서 이 파일을 받아 24시간 안에 반영합니다. 페이지에서 아이템이 하나도 파싱되지 않으면 1시간 안에 반영합니다.
+
+- 원격 셀렉터를 먼저 시도하고, `utils/parserRules.ts`의 내장 기본값은 폴백으로 남습니다.
+- CSS 셀렉터 문자열만 받습니다. 잘못된 셀렉터와 모르는 키는 무시합니다.
+- 파일을 받지 못하거나 검증에 실패하면 마지막 캐시 규칙, 그다음 내장 기본값을 사용합니다.
+- 구조 변경(데이터가 별도 API, 모달, 내장 JSON으로 이동)은 코드 수정과 스토어 배포가 필요합니다.
+- `schemaVersion`은 형식이 호환되지 않게 바뀔 때만 올립니다. 이전 버전 확장은 모르는 `schemaVersion` 파일을 무시합니다.
